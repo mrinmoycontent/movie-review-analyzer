@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Movie Review Analyzer</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, Arial, sans-serif;
+      background: #f6f7fb;
+      color: #171923;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 48px 20px;
+    }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid #e4e6ed;
+      border-radius: 18px;
+      padding: 28px;
+      box-shadow: 0 8px 30px rgba(20, 25, 40, 0.06);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 32px;
+    }
+
+    .sub {
+      margin: 0 0 24px;
+      color: #626878;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 230px;
+      border: 1px solid #cfd3dc;
+      border-radius: 12px;
+      padding: 14px;
+      font: inherit;
+      resize: vertical;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #171923;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 10px;
+      margin: 14px 0 28px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 11px 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .primary {
+      background: #171923;
+      color: #ffffff;
+    }
+
+    .secondary {
+      background: #eceef3;
+      color: #171923;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .result {
+      border: 1px solid #e4e6ed;
+      border-radius: 14px;
+      padding: 18px;
+      background: #fafbfc;
+    }
+
+    .result h2 {
+      font-size: 18px;
+      margin: 0 0 14px;
+    }
+
+    .rating {
+      font-size: 30px;
+      font-weight: 800;
+    }
+
+    .line {
+      margin: 10px 0;
+    }
+
+    .aspect {
+      padding: 9px 0;
+      border-bottom: 1px solid #e8e9ee;
+    }
+
+    .aspect:last-child {
+      border-bottom: 0;
+    }
+
+    .summary {
+      line-height: 1.65;
+    }
+
+    .muted {
+      color: #707684;
+    }
+
+    .error {
+      color: #b42318;
+    }
+
+    @media (max-width: 700px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .container {
+        padding: 28px 14px;
+      }
+
+      .card {
+        padding: 20px;
+      }
+
+      h1 {
+        font-size: 27px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <div class="card">
+
+      <h1>🎬 Movie Review Analyzer</h1>
+
+      <p class="sub">
+        Analyze a movie review for overall sentiment and key movie aspects.
+      </p>
+
+      <label for="review">Movie Review</label>
+
+      <textarea
+        id="review"
+        placeholder="Paste your movie review here..."
+      ></textarea>
+
+      <div class="buttons">
+
+        <button
+          id="analyzeBtn"
+          class="primary"
+          onclick="analyze()"
+        >
+          🔍 Analyze Review
+        </button>
+
+        <button
+          class="secondary"
+          onclick="example()"
+        >
+          📝 Try Example
+        </button>
+
+        <button
+          class="secondary"
+          onclick="clearAll()"
+        >
+          🧹 Clear
+        </button>
+
+      </div>
+
+      <div class="grid">
+
+        <div class="result">
+
+          <h2>🎯 Overall Result</h2>
+
+          <div id="overall" class="muted">
+            Your result will appear here.
+          </div>
+
+        </div>
+
+        <div class="result">
+
+          <h2>🎭 Movie Aspects</h2>
+
+          <div id="aspects" class="muted">
+            No analysis yet.
+          </div>
+
+        </div>
+
+      </div>
+
+      <div
+        class="result"
+        style="margin-top:18px"
+      >
+
+        <h2>📝 Review Summary</h2>
+
+        <div
+          id="summary"
+          class="summary muted"
+        >
+          Your summary will appear here.
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <script>
+
+    const exampleText = `The film has a promising premise and the lead actor delivers a convincing performance. The supporting cast is decent, but the characters are not developed enough. The first half is engaging, although the screenplay becomes predictable later. The direction is solid and the cinematography looks excellent. The pacing slows down in the middle, while the music adds some energy to the better scenes. The climax is disappointing and feels rushed. Overall, the movie has good moments but falls short of its potential.`;
+
+
+    async function analyze() {
+
+      const review =
+        document.getElementById("review").value.trim();
+
+      const overall =
+        document.getElementById("overall");
+
+      const aspects =
+        document.getElementById("aspects");
+
+      const summary =
+        document.getElementById("summary");
+
+      const analyzeBtn =
+        document.getElementById("analyzeBtn");
+
+
+      if (!review) {
+
+        overall.innerHTML =
+          '<span class="error">Please enter a movie review.</span>';
+
+        aspects.textContent =
+          "No analysis yet.";
+
+        summary.textContent =
+          "Your summary will appear here.";
+
+        return;
+      }
+
+
+      analyzeBtn.disabled = true;
+
+      analyzeBtn.textContent = "⏳ Analyzing...";
+
+      overall.textContent = "Analyzing...";
+
+      aspects.textContent = "Analyzing...";
+
+      summary.textContent = "Generating summary...";
+
+
+      try {
+
+        const response = await fetch(
+          "/api",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+              review: review
+            })
+          }
+        );
+
+
+        const data = await response.json();
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            data.error || "Analysis failed."
+          );
+
+        }
+
+
+        overall.innerHTML = `
+          <div class="rating">
+            ⭐ ${data.rating}/10
+          </div>
+
+          <div class="line">
+            🎭 <b>Verdict:</b> ${data.verdict}
+          </div>
+
+          <div class="line">
+            🍿 <b>Recommendation:</b>
+            ${data.recommendation}
+          </div>
+        `;
+
+
+        const icons = {
+          Acting: "🎭",
+          Story: "📖",
+          Direction: "🎬",
+          Pacing: "⏱️",
+          Music: "🎵",
+          Cinematography: "📷",
+          Climax: "🔥"
+        };
+
+
+        const entries =
+          Object.entries(data.aspects || {});
+
+
+        if (entries.length) {
+
+          aspects.innerHTML =
+            entries
+              .map(([aspect, data]) => {
+
+                return `
+                  <div class="aspect">
+                    ${icons[aspect] || "🎬"}
+                    <b>${aspect}:</b>
+                    ${data.sentiment}
+                  </div>
+                `;
+
+              })
+              .join("");
+
+        } else {
+
+          aspects.textContent =
+            "No movie aspects detected.";
+
+        }
+
+
+        summary.textContent =
+          data.summary || "No summary available.";
+
+
+      } catch (error) {
+
+        overall.innerHTML =
+          `<span class="error">
+            ${error.message}
+          </span>`;
+
+        aspects.textContent =
+          "Unable to analyze the review.";
+
+        summary.textContent =
+          "Please try again.";
+
+
+      } finally {
+
+        analyzeBtn.disabled = false;
+
+        analyzeBtn.textContent =
+          "🔍 Analyze Review";
+
+      }
+
+    }
+
+
+    function example() {
+
+      document.getElementById("review").value =
+        exampleText;
+
+      analyze();
+
+    }
+
+
+    function clearAll() {
+
+      document.getElementById("review").value = "";
+
+      document.getElementById("overall").textContent =
+        "Your result will appear here.";
+
+      document.getElementById("aspects").textContent =
+        "No analysis yet.";
+
+      document.getElementById("summary").textContent =
+        "Your summary will appear here.";
+
+    }
+
+  </script>
+
+</body>
+</html>
