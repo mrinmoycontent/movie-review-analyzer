@@ -1,36 +1,91 @@
-import json
+from fastapi import FastAPI
+from pydantic import BaseModel
 import re
-from http.server import BaseHTTPRequestHandler
 
+
+app = FastAPI()
+
+
+# -----------------------------
+# SENTIMENT PHRASES
+# -----------------------------
 
 POSITIVE_PHRASES = [
-    "excellent", "amazing", "brilliant", "fantastic", "superb",
-    "great", "good", "beautiful", "impressive", "engaging",
-    "enjoyable", "strong", "satisfying", "wonderful", "outstanding",
-    "interesting", "pleasant", "solid", "convincing", "promising",
-    "improves", "improved", "improves considerably", "gets better",
-    "got better", "picks up", "picks up toward", "toward the end",
-    "is brisk", "are brisk", "was brisk", "were brisk",
-    "keeps the movie moving", "promising premise",
-    "convincing performance", "strong performance",
+    "excellent",
+    "amazing",
+    "brilliant",
+    "fantastic",
+    "superb",
+    "great",
+    "good",
+    "beautiful",
+    "impressive",
+    "engaging",
+    "enjoyable",
+    "strong",
+    "satisfying",
+    "wonderful",
+    "outstanding",
+    "interesting",
+    "pleasant",
+    "solid",
+    "convincing",
+    "promising",
+    "improves",
+    "improved",
+    "improves considerably",
+    "gets better",
+    "got better",
+    "picks up",
+    "picks up toward",
+    "toward the end",
+    "is brisk",
+    "are brisk",
+    "was brisk",
+    "were brisk",
+    "keeps the movie moving",
+    "promising premise",
+    "convincing performance",
+    "strong performance",
     "delivers a convincing performance",
     "delivers a strong performance",
-    "direction is solid", "looks excellent",
-    "adds some energy", "music adds some energy",
-    "good moments"
+    "direction is solid",
+    "looks excellent",
+    "adds some energy",
+    "music adds some energy",
+    "good moments",
 ]
 
 
 NEGATIVE_PHRASES = [
-    "weak", "poor", "bad", "terrible", "awful", "boring",
-    "slow", "painfully slow", "predictable", "disappointing",
-    "underwhelming", "forgettable", "inconsistent", "uneven",
-    "rushed", "uninspired", "dull", "bland", "ordinary",
-    "fails to", "not developed enough",
+    "weak",
+    "poor",
+    "bad",
+    "terrible",
+    "awful",
+    "boring",
+    "slow",
+    "painfully slow",
+    "predictable",
+    "disappointing",
+    "underwhelming",
+    "forgettable",
+    "inconsistent",
+    "uneven",
+    "rushed",
+    "uninspired",
+    "dull",
+    "bland",
+    "ordinary",
+    "fails to",
+    "not developed enough",
     "characters are not developed enough",
-    "predictable later", "pacing slows down",
-    "slows down in the middle", "pacing slows",
-    "feels rushed", "falls short of its potential"
+    "predictable later",
+    "pacing slows down",
+    "slows down in the middle",
+    "pacing slows",
+    "feels rushed",
+    "falls short of its potential",
 ]
 
 
@@ -38,12 +93,15 @@ NEUTRAL_PHRASES = [
     "decent",
     "average",
     "okay",
-    "acceptable"
+    "acceptable",
 ]
 
 
-ASPECT_KEYWORDS = {
+# -----------------------------
+# MOVIE ASPECTS
+# -----------------------------
 
+ASPECT_KEYWORDS = {
     "Acting": [
         "acting",
         "actor",
@@ -54,7 +112,7 @@ ASPECT_KEYWORDS = {
         "supporting cast",
         "lead actor",
         "lead actress",
-        "performer"
+        "performer",
     ],
 
     "Story": [
@@ -67,14 +125,14 @@ ASPECT_KEYWORDS = {
         "character",
         "characters",
         "narrative",
-        "storyline"
+        "storyline",
     ],
 
     "Direction": [
         "direction",
         "director",
         "directing",
-        "directed"
+        "directed",
     ],
 
     "Pacing": [
@@ -88,7 +146,7 @@ ASPECT_KEYWORDS = {
         "dragged",
         "dragging",
         "lengthy",
-        "overlong"
+        "overlong",
     ],
 
     "Music": [
@@ -98,7 +156,7 @@ ASPECT_KEYWORDS = {
         "soundtrack",
         "score",
         "background score",
-        "bgm"
+        "bgm",
     ],
 
     "Cinematography": [
@@ -108,32 +166,47 @@ ASPECT_KEYWORDS = {
         "camera work",
         "shots",
         "shot composition",
-        "shot"
+        "shot",
     ],
 
     "Climax": [
         "climax",
         "ending",
         "finale",
-        "final act"
-    ]
+        "final act",
+    ],
 }
 
+
+# -----------------------------
+# RATING VALUES
+# -----------------------------
 
 SENTIMENT_RATING = {
     "Positive": 8.0,
     "Mixed": 6.0,
     "Neutral": 5.5,
-    "Negative": 3.0
+    "Negative": 3.0,
 }
 
 
-def split_sentiment_clauses(text):
+# -----------------------------
+# REQUEST MODEL
+# -----------------------------
 
+class ReviewRequest(BaseModel):
+    review: str = ""
+
+
+# -----------------------------
+# SENTIMENT HELPERS
+# -----------------------------
+
+def split_sentiment_clauses(text):
     parts = re.split(
         r"\s+(?:but|although|though|however|yet|while)\s+",
         text,
-        flags=re.IGNORECASE
+        flags=re.IGNORECASE,
     )
 
     return [
@@ -144,7 +217,6 @@ def split_sentiment_clauses(text):
 
 
 def classify_clause(clause):
-
     lower = clause.lower()
 
     protected_phrases = [
@@ -155,12 +227,11 @@ def classify_clause(clause):
         "doesn't feel rushed",
         "does not feel rushed",
         "doesn't seem rushed",
-        "does not seem rushed"
+        "does not seem rushed",
     ]
 
     for phrase in protected_phrases:
         lower = lower.replace(phrase, "")
-
 
     positive_hits = sum(
         1
@@ -168,13 +239,11 @@ def classify_clause(clause):
         if phrase in lower
     )
 
-
     negative_hits = sum(
         1
         for phrase in NEGATIVE_PHRASES
         if phrase in lower
     )
-
 
     neutral_hits = sum(
         1
@@ -182,27 +251,21 @@ def classify_clause(clause):
         if phrase in lower
     )
 
-
     if positive_hits > negative_hits:
         return "Positive"
-
 
     if negative_hits > positive_hits:
         return "Negative"
 
-
     if neutral_hits:
         return "Neutral"
-
 
     return "Neutral"
 
 
 def combine_aspect_sentiments(sentiments):
-
     if not sentiments:
         return "Neutral"
-
 
     if (
         "Positive" in sentiments
@@ -210,13 +273,11 @@ def combine_aspect_sentiments(sentiments):
     ):
         return "Mixed"
 
-
     if (
         "Positive" in sentiments
         and "Neutral" in sentiments
     ):
         return "Mixed"
-
 
     if (
         "Negative" in sentiments
@@ -224,58 +285,54 @@ def combine_aspect_sentiments(sentiments):
     ):
         return "Mixed"
 
-
     if "Positive" in sentiments:
         return "Positive"
-
 
     if "Negative" in sentiments:
         return "Negative"
 
-
     return "Neutral"
 
+
+# -----------------------------
+# MAIN ANALYZER
+# -----------------------------
 
 def analyze_movie(review):
 
     if not review or not review.strip():
-
         return {
             "rating": 5.5,
             "verdict": "Mixed",
             "recommendation": "Watch if Interested",
             "aspects": {},
-            "summary": "Please enter a movie review."
+            "summary": "Please enter a movie review.",
         }
 
+    review = review.strip()
 
     aspect_data = {
         aspect: {
             "sentiments": [],
-            "phrases": []
+            "phrases": [],
         }
         for aspect in ASPECT_KEYWORDS
     }
 
-
     sentences = re.split(
         r"(?<=[.!?])\s+",
-        review.strip()
+        review,
     )
-
 
     for sentence in sentences:
 
         clauses = split_sentiment_clauses(sentence)
 
-
         for clause in clauses:
 
             lower_clause = clause.lower()
 
-
             matched_aspects = []
-
 
             for aspect, keywords in ASPECT_KEYWORDS.items():
 
@@ -283,16 +340,12 @@ def analyze_movie(review):
                     keyword in lower_clause
                     for keyword in keywords
                 ):
-
                     matched_aspects.append(aspect)
-
 
             if not matched_aspects:
                 continue
 
-
             sentiment = classify_clause(clause)
-
 
             for aspect in matched_aspects:
 
@@ -304,15 +357,12 @@ def analyze_movie(review):
                     clause.strip()
                 )
 
-
     aspect_results = {}
-
 
     for aspect, data in aspect_data.items():
 
         if not data["sentiments"]:
             continue
-
 
         aspect_results[aspect] = {
             "sentiment": combine_aspect_sentiments(
@@ -320,38 +370,35 @@ def analyze_movie(review):
             ),
             "phrases": list(
                 dict.fromkeys(data["phrases"])
-            )
+            ),
         }
 
+    # -----------------------------
+    # RATING
+    # -----------------------------
 
     scores = [
-
         SENTIMENT_RATING[data["sentiment"]]
-
         for data in aspect_results.values()
-
         if data["sentiment"] in SENTIMENT_RATING
-
     ]
 
-
     if scores:
-
         rating = round(
             sum(scores) / len(scores),
-            1
+            1,
         )
-
     else:
-
         rating = 5.5
 
+    # -----------------------------
+    # VERDICT
+    # -----------------------------
 
     sentiments = [
         data["sentiment"]
         for data in aspect_results.values()
     ]
-
 
     if (
         (
@@ -360,41 +407,36 @@ def analyze_movie(review):
         )
         or "Mixed" in sentiments
     ):
-
         verdict = "Mixed"
-
 
     elif rating >= 7.0:
-
         verdict = "Positive"
 
-
     elif rating <= 4.5:
-
         verdict = "Negative"
 
-
     else:
-
         verdict = "Mixed"
 
+    # -----------------------------
+    # RECOMMENDATION
+    # -----------------------------
 
     if rating >= 7.0:
-
         recommendation = "Highly Recommended"
 
     elif rating >= 6.0:
-
         recommendation = "Recommended"
 
     elif rating >= 5.0:
-
         recommendation = "Watch if Interested"
 
     else:
-
         recommendation = "Not Recommended"
 
+    # -----------------------------
+    # SUMMARY
+    # -----------------------------
 
     positive = [
         aspect
@@ -402,23 +444,17 @@ def analyze_movie(review):
         if data["sentiment"] == "Positive"
     ]
 
-
     mixed = [
         aspect
         for aspect, data in aspect_results.items()
         if data["sentiment"] == "Mixed"
     ]
 
-
     negative = [
         aspect
         for aspect, data in aspect_results.items()
         if data["sentiment"] == "Negative"
     ]
-
-
-    parts = []
-
 
     def list_words(items):
 
@@ -433,31 +469,26 @@ def analyze_movie(review):
             + f" and {items[-1]}"
         )
 
+    parts = []
 
     if positive:
-
         parts.append(
             f"The movie's stronger areas are "
             f"{list_words(positive)}."
         )
 
-
     if mixed:
-
         parts.append(
             f"The {list_words(mixed)} "
             f"{'is' if len(mixed) == 1 else 'are'} "
             f"more mixed."
         )
 
-
     if negative:
-
         parts.append(
             f"The main weaknesses are "
             f"{list_words(negative)}."
         )
-
 
     if rating >= 7.0:
 
@@ -481,144 +512,35 @@ def analyze_movie(review):
             "several noticeable weaknesses."
         )
 
-
     return {
-
         "rating": rating,
-
         "verdict": verdict,
-
         "recommendation": recommendation,
-
         "aspects": aspect_results,
-
-        "summary": " ".join(parts)
-
+        "summary": " ".join(parts),
     }
 
 
-class handler(BaseHTTPRequestHandler):
+# -----------------------------
+# API ROUTES
+# -----------------------------
 
-    def send_json(self, status_code, payload):
-
-        body = json.dumps(
-            payload
-        ).encode("utf-8")
-
-
-        self.send_response(status_code)
-
-
-        self.send_header(
-            "Content-Type",
-            "application/json; charset=utf-8"
-        )
+@app.get("/")
+def root():
+    return {
+        "status": "ok",
+        "message": "Movie Review Analyzer API is running.",
+    }
 
 
-        self.send_header(
-            "Access-Control-Allow-Origin",
-            "*"
-        )
+@app.get("/api")
+def api_health():
+    return {
+        "status": "ok",
+        "message": "Movie Review Analyzer API is running.",
+    }
 
 
-        self.send_header(
-            "Access-Control-Allow-Headers",
-            "Content-Type"
-        )
-
-
-        self.send_header(
-            "Access-Control-Allow-Methods",
-            "POST, OPTIONS"
-        )
-
-
-        self.end_headers()
-
-
-        self.wfile.write(body)
-
-
-    def do_OPTIONS(self):
-
-        self.send_response(204)
-
-        self.send_header(
-            "Access-Control-Allow-Origin",
-            "*"
-        )
-
-        self.send_header(
-            "Access-Control-Allow-Headers",
-            "Content-Type"
-        )
-
-        self.send_header(
-            "Access-Control-Allow-Methods",
-            "POST, OPTIONS"
-        )
-
-        self.end_headers()
-
-
-    def do_GET(self):
-
-        self.send_json(
-            200,
-            {
-                "status": "ok",
-                "message": (
-                    "Movie Review Analyzer API "
-                    "is running."
-                )
-            }
-        )
-
-
-    def do_POST(self):
-
-        try:
-
-            content_length = int(
-                self.headers.get(
-                    "Content-Length",
-                    "0"
-                )
-            )
-
-
-            raw_body = self.rfile.read(
-                content_length
-            )
-
-
-            data = json.loads(
-                raw_body.decode("utf-8")
-            )
-
-
-            review = data.get(
-                "review",
-                ""
-            )
-
-
-            result = analyze_movie(
-                review
-            )
-
-
-            self.send_json(
-                200,
-                result
-            )
-
-
-        except Exception as error:
-
-            self.send_json(
-                400,
-                {
-                    "error": str(error)
-                }
-            )
+@app.post("/api")
+def analyze_review(request: ReviewRequest):
+    return analyze_movie(request.review)
